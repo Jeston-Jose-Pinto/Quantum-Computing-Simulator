@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Domain Authorization Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1 class="text-3xl mb-6">🔧 Firebase Authentication Diagnostics</h1>
+    
+    <div class="space-y-4">
+        <div id="config-check" class="p-4 border border-gray-600 rounded"></div>
+        <div id="auth-check" class="p-4 border border-gray-600 rounded"></div>
+        <div id="domain-check" class="p-4 border border-gray-600 rounded"></div>
+        
+        <button id="test-google-auth" class="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded font-semibold">
+            🧪 Test Google Authentication
+        </button>
+        
+        <div id="auth-result" class="p-4 border border-gray-600 rounded min-h-[100px]"></div>
+    </div>
+
+    <div class="mt-8 p-4 bg-yellow-900 border border-yellow-600 rounded">
+        <h3 class="text-yellow-300 font-bold mb-2">📋 If you see domain authorization errors:</h3>
+        <ol class="list-decimal list-inside space-y-1 text-yellow-100 text-sm">
+            <li>Go to <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-300 underline">Firebase Console</a></li>
+            <li>Select your project: <strong>quantum-8efdf</strong></li>
+            <li>Go to <strong>Authentication → Settings → Authorized domains</strong></li>
+            <li>Add these domains:
+                <ul class="list-disc list-inside ml-4 mt-1">
+                    <li><code>localhost</code></li>
+                    <li><code>localhost:8000</code></li>
+                    <li><code>127.0.0.1:8000</code></li>
+                </ul>
+            </li>
+            <li>Save and try again</li>
+        </ol>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            GoogleAuthProvider,
+            signInWithPopup
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const configCheck = document.getElementById('config-check');
+        const authCheck = document.getElementById('auth-check');
+        const domainCheck = document.getElementById('domain-check');
+        const authResult = document.getElementById('auth-result');
+        const testButton = document.getElementById('test-google-auth');
+
+        function updateStatus(element, title, status, message, isError = false) {
+            const statusClass = isError ? 'text-red-400' : 'text-green-400';
+            const icon = isError ? '❌' : '✅';
+            element.innerHTML = `
+                <h3 class="font-bold mb-2">${icon} ${title}</h3>
+                <p class="${statusClass} font-semibold">${status}</p>
+                <p class="text-gray-300 text-sm">${message}</p>
+            `;
+        }
+
+        // Check 1: Firebase Configuration
+        try {
+            updateStatus(configCheck, 'Firebase Configuration', 'LOADED', `Config found for project: ${window.firebaseConfig?.projectId}`);
+        } catch (error) {
+            updateStatus(configCheck, 'Firebase Configuration', 'ERROR', `Failed to load config: ${error.message}`, true);
+        }
+
+        // Check 2: Firebase App Initialization
+        let app, auth, provider;
+        try {
+            app = initializeApp(window.firebaseConfig);
+            auth = getAuth(app);
+            provider = new GoogleAuthProvider();
+            updateStatus(authCheck, 'Firebase Auth Setup', 'SUCCESS', 'Firebase app and auth initialized successfully');
+        } catch (error) {
+            updateStatus(authCheck, 'Firebase Auth Setup', 'ERROR', `Initialization failed: ${error.message}`, true);
+        }
+
+        // Check 3: Domain Information
+        const currentDomain = window.location.origin;
+        const authDomain = window.firebaseConfig?.authDomain;
+        updateStatus(domainCheck, 'Domain Information', 'INFO', `Current: ${currentDomain} | Auth Domain: ${authDomain}`);
+
+        // Test Google Authentication
+        testButton.addEventListener('click', async () => {
+            authResult.innerHTML = '<p class="text-yellow-400">🔄 Testing Google Authentication...</p>';
+            
+            try {
+                provider.setCustomParameters({
+                    prompt: 'select_account'
+                });
+                
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                
+                authResult.innerHTML = `
+                    <h3 class="text-green-400 font-bold mb-2">✅ Google Authentication SUCCESS!</h3>
+                    <div class="space-y-1 text-sm">
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>Name:</strong> ${user.displayName}</p>
+                        <p><strong>UID:</strong> ${user.uid}</p>
+                        <p><strong>Photo:</strong> <img src="${user.photoURL}" class="w-8 h-8 rounded-full inline-block ml-2" /></p>
+                    </div>
+                    <p class="text-green-300 mt-3">🎉 Authentication is working! You can now use login.html and signup.html</p>
+                `;
+                
+            } catch (error) {
+                console.error('Google Auth Error:', error);
+                
+                let errorMessage = error.message;
+                let solution = '';
+                
+                if (error.code === 'auth/unauthorized-domain') {
+                    solution = `
+                        <div class="mt-3 p-3 bg-red-900 border border-red-600 rounded">
+                            <h4 class="text-red-300 font-bold">🚨 DOMAIN AUTHORIZATION ERROR</h4>
+                            <p class="text-red-200 text-sm mt-1">Your current domain (${window.location.origin}) is not authorized in Firebase.</p>
+                            <p class="text-red-200 text-sm mt-2"><strong>Follow the instructions above to add authorized domains in Firebase Console.</strong></p>
+                        </div>
+                    `;
+                } else if (error.code === 'auth/popup-blocked') {
+                    solution = `
+                        <div class="mt-3 p-3 bg-yellow-900 border border-yellow-600 rounded">
+                            <h4 class="text-yellow-300 font-bold">🚫 POPUP BLOCKED</h4>
+                            <p class="text-yellow-200 text-sm mt-1">Your browser blocked the authentication popup. Please allow popups for this site and try again.</p>
+                        </div>
+                    `;
+                } else if (error.code === 'auth/popup-closed-by-user') {
+                    solution = `
+                        <div class="mt-3 p-3 bg-blue-900 border border-blue-600 rounded">
+                            <h4 class="text-blue-300 font-bold">ℹ️ USER CANCELLED</h4>
+                            <p class="text-blue-200 text-sm mt-1">Authentication was cancelled by user.</p>
+                        </div>
+                    `;
+                }
+                
+                authResult.innerHTML = `
+                    <h3 class="text-red-400 font-bold mb-2">❌ Google Authentication FAILED</h3>
+                    <div class="space-y-1 text-sm">
+                        <p><strong>Error Code:</strong> ${error.code}</p>
+                        <p><strong>Error Message:</strong> ${errorMessage}</p>
+                    </div>
+                    ${solution}
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

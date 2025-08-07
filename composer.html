@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quantum Circuit Builder</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Three.js for 3D Bloch sphere -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Chart.js for enhanced bar charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Monaco Editor -->
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs/loader.js"></script>
+  
+  <style>
+    /* Enhanced layout styles for better screen utilization */
+    .enhanced-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 380px;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      height: 830px;
+      padding: 12px;
+      max-width: 100vw;
+    }
+
+    .top-toolbar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: rgba(34, 38, 57, 0.35);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(130, 230, 255, 0.22);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .enhanced-left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .enhanced-center-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .enhanced-right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .compact-card {
+      background: rgba(34, 38, 57, 0.35);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(130, 230, 255, 0.22);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      padding: 16px;
+      min-height: 0;
+    }
+
+    .compact-card h3 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .enhanced-circuit-area {
+      flex: 1;
+      min-height: 300px;
+      position: relative;
+    }
+
+    .gate-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .gate-button {
+      aspect-ratio: 1;
+      border: 2px solid rgba(130, 230, 255, 0.3);
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--color-text);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .gate-button:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: rgba(130, 230, 255, 0.5);
+      transform: scale(1.05);
+    }
+
+    .control-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .control-row button {
+      padding: 6px 12px;
+      border: 1px solid rgba(130, 230, 255, 0.3);
+      border-radius: 6px;
+      background: rgba(34, 38, 57, 0.5);
+      color: var(--color-text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .control-row button:hover {
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    .tab-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .tab-buttons {
+      display: flex;
+      border-bottom: 1px solid rgba(130, 230, 255, 0.2);
+      margin-bottom: 12px;
+    }
+
+    .tab-button {
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .tab-button.active {
+      color: var(--color-text);
+      border-bottom-color: var(--color-primary);
+    }
+
+    .tab-content {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .tab-content:not(.active) {
+      display: none;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .info-item {
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .info-item label {
+      display: block;
+      color: var(--color-text-secondary);
+      margin-bottom: 2px;
+    }
+
+    .info-item value {
+      color: var(--color-text);
+      font-weight: 600;
+    }
+
+    .circuit-wrapper {
+      flex: 1;
+      overflow: auto;
+      border: 1px solid rgba(130, 230, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.1);
+      min-height: 200px;
+    }
+
+    .results-section {
+      max-height: 350px;
+      overflow-y: auto;
+    }
+
+    .bottom-status {
+      grid-column: 1 / -1;
+      padding: 8px 16px;
+      background: rgba(34, 38, 57, 0.35);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(130, 230, 255, 0.22);
+      border-radius: 12px;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1400px) {
+      .enhanced-layout {
+        grid-template-columns: 260px 1fr 340px;
+      }
+    }
+
+    @media (max-width: 1200px) {
+      .enhanced-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr auto;
+        height: auto;
+        gap: 16px;
+      }
+      
+      .enhanced-left-panel,
+      .enhanced-right-panel {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="enhanced-layout">
+    <!-- Top Toolbar -->
+    <div class="top-toolbar">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 700; color: var(--color-text);">
+          Quantum Circuit Builder
+        </h1>
+        <span style="color: var(--color-text-secondary); font-size: 14px;">
+          Build and simulate quantum circuits with real-time visualization
+        </span>
+      </div>
+      
+      <div class="control-row">
+        <button id="btnAddQubit">+ Qubit</button>
+        <button id="btnRemoveQubit">- Qubit</button>
+        <button id="btnUndo">Undo</button>
+        <button id="btnRedo">Redo</button>
+        <button id="btnClear">Clear All</button>
+        <button id="btnSimulate" style="background: linear-gradient(45deg, var(--color-primary), var(--color-teal-400)); color: white; font-weight: 600;">
+          Simulate Circuit
+        </button>
+      </div>
+    </div>
+
+    <!-- Left Panel: Gates & Controls -->
+    <div class="enhanced-left-panel">
+      <!-- Quantum Gates -->
+      <div class="compact-card">
+        <h3>🎛️ Quantum Gates</h3>
+        <div class="gate-grid" id="gatePalette">
+          <button class="gate-button" data-gate="H">H</button>
+          <button class="gate-button" data-gate="X">X</button>
+          <button class="gate-button" data-gate="Y">Y</button>
+          <button class="gate-button" data-gate="Z">Z</button>
+          <button class="gate-button" data-gate="S">S</button>
+          <button class="gate-button" data-gate="T">T</button>
+          <button class="gate-button" data-gate="CNOT">⊕</button>
+          <button class="gate-button" data-gate="CZ">CZ</button>
+          <button class="gate-button" data-gate="SWAP">⇄</button>
+          <button class="gate-button" data-gate="RX">RX</button>
+          <button class="gate-button" data-gate="RY">RY</button>
+          <button class="gate-button" data-gate="RZ">RZ</button>
+        </div>
+      </div>
+
+      <!-- Circuit Info -->
+      <div class="compact-card">
+        <h3>📊 Circuit Info</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>Qubits</label>
+            <value id="qubitCount">3</value>
+          </div>
+          <div class="info-item">
+            <label>Depth</label>
+            <value id="circuitDepth">0</value>
+          </div>
+          <div class="info-item">
+            <label>Gates</label>
+            <value id="gateCount">0</value>
+          </div>
+          <div class="info-item">
+            <label>Entangled</label>
+            <value id="entanglementStatus">No</value>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="compact-card">
+        <h3>⚡ Quick Actions</h3>
+        <div class="control-row" style="flex-direction: column; gap: 8px;">
+          <button id="btnBellState" style="width: 100%;">Create Bell State</button>
+          <button id="btnGroverInit" style="width: 100%;">Grover's Algorithm</button>
+          <button id="btnQFT" style="width: 100%;">Quantum Fourier Transform</button>
+          <button id="btnRandomCircuit" style="width: 100%;">Random Circuit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Panel: Circuit Canvas -->
+    <div class="enhanced-center-panel">
+      <div class="compact-card enhanced-circuit-area">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3>🔗 Quantum Circuit</h3>
+          <span id="circuitInfo" style="color: var(--color-text-secondary); font-size: 12px;">
+            3 qubits, 0 gates
+          </span>
+        </div>
+        <div class="circuit-wrapper">
+          <div id="circuitCanvas" class="circuit-canvas"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Tabbed Interface -->
+    <div class="enhanced-right-panel">
+      <div class="compact-card tab-container">
+        <div class="tab-buttons">
+          <button class="tab-button active" data-tab="code">Code</button>
+          <button class="tab-button" data-tab="import">Import</button>
+          <button class="tab-button" data-tab="bloch">Bloch</button>
+          <button class="tab-button" data-tab="results">Results</button>
+        </div>
+
+        <!-- Code Tab -->
+        <div id="codeTab" class="tab-content active">
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--color-text-secondary);">Export Language:</label>
+            <select id="codeLangSelect" style="width: 100%; padding: 6px; border: 1px solid rgba(130, 230, 255, 0.3); border-radius: 4px; background: rgba(0,0,0,0.2); color: var(--color-text);">
+              <option value="qasm">OpenQASM 2.0</option>
+              <option value="qiskit">Qiskit Python</option>
+              <option value="cirq">Cirq Python</option>
+              <option value="qsharp">Q#</option>
+              <option value="quil">Quil</option>
+            </select>
+          </div>
+          <div id="codeEditor" style="height: 300px; border: 1px solid rgba(130, 230, 255, 0.2); border-radius: 6px; font-family: monospace; background: rgba(0,0,0,0.3);"></div>
+        </div>
+
+        <!-- Import Tab -->
+        <div id="importTab" class="tab-content">
+          <div style="margin-bottom: 12px;">
+            <label style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--color-text-secondary);">Import Language:</label>
+            <select id="importLangSelect" style="width: 100%; padding: 6px; border: 1px solid rgba(130, 230, 255, 0.3); border-radius: 4px; background: rgba(0,0,0,0.2); color: var(--color-text);">
+              <option value="qasm">OpenQASM 2.0</option>
+              <option value="qiskit">Qiskit Python</option>
+              <option value="cirq">Cirq Python</option>
+              <option value="qsharp">Q#</option>
+              <option value="quil">Quil</option>
+            </select>
+          </div>
+          <div id="importEditor" style="height: 200px; border: 1px solid rgba(130, 230, 255, 0.2); border-radius: 6px; font-family: monospace; background: rgba(0,0,0,0.3); margin-bottom: 12px;"></div>
+          <div class="control-row" style="flex-direction: column; gap: 8px;">
+            <button id="btnVisualise" style="width: 100%; background: linear-gradient(45deg, var(--color-primary), var(--color-teal-400)); color: white;">
+              ⚛️ Visualize Circuit
+            </button>
+            <button id="btnClearImport" style="width: 100%;">Clear Import</button>
+          </div>
+          <div id="importStatus" style="margin-top: 8px; font-size: 12px;"></div>
+        </div>
+
+        <!-- Bloch Sphere Tab -->
+        <div id="blochTab" class="tab-content">
+          <div id="blochSphere" style="height: 180px; border: 1px solid rgba(130, 230, 255, 0.2); border-radius: 6px; background: rgba(0,0,0,0.2); margin-bottom: 16px;"></div>
+          <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 6px; min-height: 120px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600;">Qubit 0 State</h4>
+            <div style="font-size: 13px; line-height: 1.6; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(130, 230, 255, 0.1);">
+                <strong style="color: var(--color-text-secondary);">State:</strong> 
+                <span id="currentState" style="color: var(--color-text); font-family: monospace;">|0⟩</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(130, 230, 255, 0.1);">
+                <strong style="color: var(--color-text-secondary);">Amplitude:</strong> 
+                <span id="amplitude" style="color: var(--color-text); font-family: monospace;">1.0 + 0.0i</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(130, 230, 255, 0.1);">
+                <strong style="color: var(--color-text-secondary);">Phase:</strong> 
+                <span id="phase" style="color: var(--color-text); font-family: monospace;">0°</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0;">
+                <strong style="color: var(--color-text-secondary);">Probability:</strong> 
+                <span id="probability" style="color: var(--color-text); font-family: monospace;">|0⟩: 100%, |1⟩: 0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results Tab -->
+        <div id="resultsTab" class="tab-content results-section">
+          <h4 style="margin: 0 0 12px 0; font-size: 14px;">📈 Measurement Probabilities</h4>
+          <div style="height: 380px; margin-bottom: 12px; border: 1px solid rgba(130, 230, 255, 0.2); border-radius: 6px; background: rgba(0,0,0,0.2);">
+            <canvas id="resultsChart" style="width: 100%; height: 100%;"></canvas>
+          </div>
+          <div id="stateTable" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px; font-size: 12px; height: 600px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <div class="bottom-status">
+      <div style="display: flex; gap: 20px;">
+        <span>Status: <span id="simulationStatus" style="color: var(--color-success);">Ready</span></span>
+        <span>Last Simulation: <span id="lastSimTime">Never</span></span>
+        <span>Quantum State: <span id="quantumState">|000⟩</span></span>
+      </div>
+      <div style="display: flex; gap: 20px;">
+        <span>CPU Usage: <span id="cpuUsage">0%</span></span>
+        <span>Memory: <span id="memUsage">0 MB</span></span>
+        <span>Version: <span style="color: var(--color-text-secondary);">v2.1.0</span></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  
+  <script>
+    // Enhanced UI functionality with Circuit Info and Quick Actions
+    document.addEventListener('DOMContentLoaded', function() {
+      // Circuit state management
+      let circuitState = {
+        qubits: 3,
+        gates: [],
+        depth: 0,
+        entangled: false
+      };
+
+      // Update circuit info display
+      function updateCircuitInfo() {
+        document.getElementById('qubitCount').textContent = circuitState.qubits;
+        document.getElementById('circuitDepth').textContent = circuitState.depth;
+        document.getElementById('gateCount').textContent = circuitState.gates.length;
+        document.getElementById('entanglementStatus').textContent = circuitState.entangled ? 'Yes' : 'No';
+        document.getElementById('circuitInfo').textContent = `${circuitState.qubits} qubits, ${circuitState.gates.length} gates`;
+        document.getElementById('quantumState').textContent = generateQuantumState();
+        updateBlochSphereInfo();
+      }
+
+      // Update Bloch sphere information
+      function updateBlochSphereInfo() {
+        // Simple state representation based on circuit
+        const hasHGate = circuitState.gates.some(gate => gate.type === 'H' && gate.qubit === 0);
+        const hasXGate = circuitState.gates.some(gate => gate.type === 'X' && gate.qubit === 0);
+        
+        if (hasHGate && !hasXGate) {
+          // Superposition state
+          document.getElementById('currentState').textContent = '(|0⟩ + |1⟩)/√2';
+          document.getElementById('amplitude').textContent = '0.707 + 0.0i';
+          document.getElementById('phase').textContent = '0°';
+          document.getElementById('probability').textContent = '|0⟩: 50%, |1⟩: 50%';
+        } else if (hasXGate) {
+          // |1⟩ state
+          document.getElementById('currentState').textContent = '|1⟩';
+          document.getElementById('amplitude').textContent = '0.0 + 1.0i';
+          document.getElementById('phase').textContent = '90°';
+          document.getElementById('probability').textContent = '|0⟩: 0%, |1⟩: 100%';
+        } else {
+          // Default |0⟩ state
+          document.getElementById('currentState').textContent = '|0⟩';
+          document.getElementById('amplitude').textContent = '1.0 + 0.0i';
+          document.getElementById('phase').textContent = '0°';
+          document.getElementById('probability').textContent = '|0⟩: 100%, |1⟩: 0%';
+        }
+      }
+
+      // Generate quantum state representation
+      function generateQuantumState() {
+        const numStates = Math.pow(2, circuitState.qubits);
+        const binaryState = '0'.repeat(circuitState.qubits);
+        return `|${binaryState}⟩`;
+      }
+
+      // Add gate to circuit
+      function addGate(gateType, qubitIndex = 0, controlQubit = null) {
+        const gate = {
+          type: gateType,
+          qubit: qubitIndex,
+          control: controlQubit,
+          column: circuitState.depth
+        };
+        
+        circuitState.gates.push(gate);
+        
+        // Update depth if needed
+        const gateColumn = Math.max(...circuitState.gates.map(g => g.column)) + 1;
+        circuitState.depth = Math.max(circuitState.depth, gateColumn);
+        
+        // Check for entanglement (simplified logic)
+        if (['CNOT', 'CZ', 'SWAP'].includes(gateType) || controlQubit !== null) {
+          circuitState.entangled = true;
+        }
+        
+        updateCircuitInfo();
+        visualizeCircuit();
+        updateSimulationStatus('Circuit Modified');
+      }
+
+      // Clear circuit
+      function clearCircuit() {
+        circuitState = {
+          qubits: circuitState.qubits,
+          gates: [],
+          depth: 0,
+          entangled: false
+        };
+        updateCircuitInfo();
+        visualizeCircuit();
+        updateSimulationStatus('Circuit Cleared');
+      }
+
+      // Add/Remove qubits
+      function addQubit() {
+        if (circuitState.qubits < 8) { // Max 8 qubits for performance
+          circuitState.qubits++;
+          updateCircuitInfo();
+          visualizeCircuit();
+          updateSimulationStatus('Qubit Added');
+        }
+      }
+
+      function removeQubit() {
+        if (circuitState.qubits > 1) { // Min 1 qubit
+          circuitState.qubits--;
+          // Remove gates that affect removed qubit
+          circuitState.gates = circuitState.gates.filter(gate => 
+            gate.qubit < circuitState.qubits && 
+            (gate.control === null || gate.control < circuitState.qubits)
+          );
+          updateCircuitInfo();
+          visualizeCircuit();
+          updateSimulationStatus('Qubit Removed');
+        }
+      }
+
+      // Quick Actions Implementation
+      function createBellState() {
+        clearCircuit();
+        if (circuitState.qubits >= 2) {
+          addGate('H', 0);
+          addGate('CNOT', 1, 0);
+          updateSimulationStatus('Bell State Created');
+          showNotification('Bell state (|00⟩ + |11⟩)/√2 created!', 'success');
+        } else {
+          showNotification('Need at least 2 qubits for Bell state', 'error');
+        }
+      }
+
+      function initializeGrover() {
+        clearCircuit();
+        // Grover's algorithm initialization (simplified)
+        for (let i = 0; i < circuitState.qubits; i++) {
+          addGate('H', i);
+        }
+        updateSimulationStatus('Grover\'s Algorithm Initialized');
+        showNotification('Grover\'s algorithm superposition state created!', 'success');
+      }
+
+      function createQFT() {
+        clearCircuit();
+        // Quantum Fourier Transform (simplified)
+        for (let i = 0; i < circuitState.qubits; i++) {
+          addGate('H', i);
+          for (let j = i + 1; j < circuitState.qubits; j++) {
+            addGate('CZ', j, i);
+          }
+        }
+        updateSimulationStatus('QFT Circuit Created');
+        showNotification('Quantum Fourier Transform circuit created!', 'success');
+      }
+
+      function generateRandomCircuit() {
+        clearCircuit();
+        const gates = ['H', 'X', 'Y', 'Z', 'S', 'T'];
+        const numGates = Math.floor(Math.random() * 10) + 5; // 5-15 gates
+        
+        for (let i = 0; i < numGates; i++) {
+          const randomGate = gates[Math.floor(Math.random() * gates.length)];
+          const randomQubit = Math.floor(Math.random() * circuitState.qubits);
+          addGate(randomGate, randomQubit);
+        }
+        
+        // Add some entangling gates
+        if (circuitState.qubits >= 2) {
+          for (let i = 0; i < 2; i++) {
+            const qubit1 = Math.floor(Math.random() * circuitState.qubits);
+            let qubit2 = Math.floor(Math.random() * circuitState.qubits);
+            while (qubit2 === qubit1) {
+              qubit2 = Math.floor(Math.random() * circuitState.qubits);
+            }
+            addGate('CNOT', qubit2, qubit1);
+          }
+        }
+        
+        updateSimulationStatus('Random Circuit Generated');
+        showNotification(`Random circuit with ${numGates + 2} gates created!`, 'success');
+      }
+
+      // Circuit visualization (simplified)
+      function visualizeCircuit() {
+        const canvas = document.getElementById('circuitCanvas');
+        if (!canvas) return;
+        
+        canvas.innerHTML = ''; // Clear existing content
+        
+        // Create basic circuit visualization
+        const circuitHTML = generateCircuitHTML();
+        canvas.innerHTML = circuitHTML;
+      }
+
+      function generateCircuitHTML() {
+        let html = '<div style="padding: 20px; font-family: monospace; line-height: 2;">';
+        
+        // Draw qubit lines
+        for (let q = 0; q < circuitState.qubits; q++) {
+          html += `<div style="display: flex; align-items: center; margin: 10px 0;">`;
+          html += `<span style="margin-right: 10px; color: var(--color-text-secondary);">|q${q}⟩</span>`;
+          html += `<div style="border-top: 1px solid rgba(130, 230, 255, 0.5); flex: 1; position: relative; height: 1px;">`;
+          
+          // Add gates for this qubit
+          const qubitGates = circuitState.gates.filter(gate => gate.qubit === q || gate.control === q);
+          qubitGates.forEach((gate, index) => {
+            const leftPos = (gate.column * 60) + 20;
+            const gateSymbol = getGateSymbol(gate, q);
+            html += `<div style="position: absolute; left: ${leftPos}px; top: -15px; width: 30px; height: 30px; background: rgba(59, 130, 246, 0.8); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">${gateSymbol}</div>`;
+          });
+          
+          html += `</div></div>`;
+        }
+        
+        html += '</div>';
+        return html;
+      }
+
+      function getGateSymbol(gate, qubitIndex) {
+        if (gate.control === qubitIndex) {
+          return '●';
+        }
+        if (gate.qubit === qubitIndex) {
+          switch (gate.type) {
+            case 'CNOT': return '⊕';
+            case 'SWAP': return '×';
+            default: return gate.type;
+          }
+        }
+        return '';
+      }
+
+      // Notification system
+      function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: ${type === 'success' ? 'rgba(34, 197, 94, 0.9)' : type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(59, 130, 246, 0.9)'};
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+          z-index: 10000;
+          font-size: 14px;
+          max-width: 300px;
+          backdrop-filter: blur(10px);
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+      }
+
+      // Update simulation status
+      function updateSimulationStatus(status) {
+        document.getElementById('simulationStatus').textContent = status;
+        document.getElementById('simulationStatus').style.color = 'var(--color-warning)';
+        
+        setTimeout(() => {
+          document.getElementById('simulationStatus').textContent = 'Ready';
+          document.getElementById('simulationStatus').style.color = 'var(--color-success)';
+        }, 2000);
+      }
+
+      // Tab switching functionality
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetTab = button.getAttribute('data-tab');
+          
+          // Update active button
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+          
+          // Update active content
+          tabContents.forEach(content => {
+            content.classList.remove('active');
+            if (content.id === targetTab + 'Tab') {
+              content.classList.add('active');
+            }
+          });
+        });
+      });
+
+      // Gate button interactions
+      const gateButtons = document.querySelectorAll('.gate-button');
+      gateButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const gate = button.getAttribute('data-gate');
+          // Add visual feedback
+          button.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            button.style.transform = 'scale(1)';
+          }, 100);
+          
+          // Add gate to circuit
+          const randomQubit = Math.floor(Math.random() * circuitState.qubits);
+          if (['CNOT', 'CZ'].includes(gate) && circuitState.qubits >= 2) {
+            const controlQubit = randomQubit;
+            const targetQubit = (controlQubit + 1) % circuitState.qubits;
+            addGate(gate, targetQubit, controlQubit);
+          } else {
+            addGate(gate, randomQubit);
+          }
+        });
+      });
+
+      // Control button event listeners
+      document.getElementById('btnAddQubit').addEventListener('click', addQubit);
+      document.getElementById('btnRemoveQubit').addEventListener('click', removeQubit);
+      document.getElementById('btnClear').addEventListener('click', clearCircuit);
+      
+      // Quick action buttons
+      document.getElementById('btnBellState').addEventListener('click', createBellState);
+      document.getElementById('btnGroverInit').addEventListener('click', initializeGrover);
+      document.getElementById('btnQFT').addEventListener('click', createQFT);
+      document.getElementById('btnRandomCircuit').addEventListener('click', generateRandomCircuit);
+
+      // Simulate button
+      document.getElementById('btnSimulate').addEventListener('click', () => {
+        updateSimulationStatus('Simulating...');
+        setTimeout(() => {
+          updateSimulationStatus('Simulation Complete');
+          showNotification('Circuit simulation completed successfully!', 'success');
+        }, 1500);
+      });
+
+      // Simulate status updates
+      function updateStatus() {
+        const now = new Date();
+        document.getElementById('lastSimTime').textContent = now.toLocaleTimeString();
+        
+        // Mock CPU and memory usage
+        document.getElementById('cpuUsage').textContent = Math.floor(Math.random() * 30) + '%';
+        document.getElementById('memUsage').textContent = Math.floor(Math.random() * 500 + 100) + ' MB';
+      }
+
+      // Update status every 5 seconds
+      setInterval(updateStatus, 5000);
+      
+      // Initialize
+      updateCircuitInfo();
+      visualizeCircuit();
+      updateStatus();
+    });
+  </script>
+</body>
+</html>

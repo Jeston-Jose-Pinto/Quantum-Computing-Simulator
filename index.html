@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quantum Computing Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+
+      /* Elegant logo animations */
+      @keyframes pulse-glow {
+        0%, 100% {
+          box-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 30px rgba(96, 165, 250, 0.8);
+        }
+      }
+
+      @keyframes float {
+        0%, 100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-2px);
+        }
+      }
+
+      .logo-container {
+        animation: float 3s ease-in-out infinite;
+      }
+
+      .logo-symbol {
+        animation: pulse-glow 2s ease-in-out infinite;
+      }
+
+      /* Quantum-inspired particle effect */
+      @keyframes particle {
+        0% {
+          transform: scale(0) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1) rotate(180deg);
+          opacity: 0;
+        }
+      }
+
+      .quantum-particle {
+        animation: particle 1.5s ease-out infinite;
+        animation-delay: var(--delay);
+      }
+
+      /* Theme toggle styles */
+      .theme-toggle {
+        position: relative;
+        width: 60px;
+        height: 30px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .theme-toggle::before {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 24px;
+        height: 24px;
+        background: linear-gradient(45deg, #fbbf24, #f59e0b);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .theme-toggle.dark::before {
+        transform: translateX(28px);
+        background: linear-gradient(45deg, #6366f1, #8b5cf6);
+      }
+
+      /* Light mode styles */
+      .light-mode {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+        color: #1e293b !important;
+      }
+
+      .light-mode .bg-gray-900 {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+      }
+
+      .light-mode header {
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(10px) !important;
+      }
+
+      .light-mode .text-white {
+        color: #1e293b !important;
+      }
+
+      .light-mode .text-gray-300 {
+        color: #64748b !important;
+      }
+
+      .light-mode .bg-white\/10 {
+        background: rgba(255, 255, 255, 0.8) !important;
+        border: 1px solid rgba(148, 163, 184, 0.2) !important;
+      }
+
+      .light-mode .bg-gradient-to-br {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+      }
+
+      .light-mode .bg-purple-600 {
+        background: #ddd6fe !important;
+        opacity: 0.3 !important;
+      }
+
+      /* Smooth transition for theme changes */
+      * {
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900">
+    <!-- Header with New Navigation Structure -->
+    <header
+      class="absolute top-0 left-0 right-0 p-4 bg-black bg-opacity-20 backdrop-blur-sm z-30"
+    >
+      <div class="max-w-7xl mx-auto flex justify-between items-center">
+        <!-- Left: Logo -->
+        <a href="index.html" class="flex items-center space-x-3 logo-container group">
+          <div class="relative">
+            <!-- Main Logo Symbol -->
+            <div class="relative w-12 h-12 logo-symbol bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
+              <!-- Q Symbol with modern styling -->
+              <div class="text-white font-bold text-xl tracking-tight">Q</div>
+              
+              <!-- Quantum particles around the logo -->
+              <div class="absolute inset-0 overflow-hidden rounded-xl">
+                <div class="quantum-particle absolute top-1 right-1 w-1 h-1 bg-cyan-400 rounded-full" style="--delay: 0s"></div>
+                <div class="quantum-particle absolute bottom-2 left-1 w-0.5 h-0.5 bg-blue-400 rounded-full" style="--delay: 0.3s"></div>
+                <div class="quantum-particle absolute top-2 left-3 w-0.5 h-0.5 bg-purple-400 rounded-full" style="--delay: 0.6s"></div>
+                <div class="quantum-particle absolute bottom-1 right-2 w-1 h-1 bg-indigo-400 rounded-full" style="--delay: 0.9s"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex flex-col">
+            <span class="text-2xl font-bold text-white tracking-tight">QSim</span>
+            <span class="text-xs text-cyan-400 font-medium -mt-1">Quantum Simulator</span>
+          </div>
+        </a>
+
+        <!-- Middle: Navigation Links -->
+        <nav class="hidden md:flex gap-8 items-center">
+          <a
+            href="index.html"
+            class="text-gray-300 hover:text-white transition-colors"
+            >Home</a
+          >
+          <a
+            href="https://quantumkittens.online/"
+            class="text-gray-300 hover:text-white transition-colors"
+            >Learn</a
+          >
+          <a href="#" class="text-gray-300 hover:text-white transition-colors"
+            >Resources</a
+          >
+          
+          <!-- Theme Toggle -->
+          <div class="flex items-center gap-2">
+            <span class="text-gray-400 text-sm">🌞</span>
+            <div class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode"></div>
+            <span class="text-gray-400 text-sm">🌙</span>
+          </div>
+        </nav>
+
+        <!-- Right: Auth Links (Dynamic) -->
+        <div id="nav-links" class="flex items-center gap-4">
+          <a
+            href="login.html"
+            class="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            >Login</a
+          >
+          <a
+            href="signup.html"
+            class="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
+            >Sign Up</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <div
+      class="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white"
+    >
+      <!-- Background elements -->
+      <div
+        class="absolute inset-0 bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900"
+      ></div>
+      <div
+        class="absolute top-0 right-0 w-2/3 h-screen bg-purple-600 opacity-10 blur-3xl rounded-full -mr-32"
+      ></div>
+
+      <!-- Main Content -->
+      <div
+        class="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 pt-24 pb-16"
+      >
+        <!-- Hero Section -->
+        <div class="text-center max-w-3xl">
+          <h1
+            class="text-5xl sm:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 mb-6"
+          >
+            Quantum Computing Simulator
+          </h1>
+          <p class="text-xl text-gray-300 mb-8">
+            Explore the fascinating world of quantum computing with our
+            interactive simulator.
+          </p>
+          <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a
+              href="composer.html"
+              class="px-8 py-3 text-lg font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-cyan-500/30"
+            >
+              Start Simulating
+            </a>
+          </div>
+        </div>
+
+        <!-- Features Section -->
+        <div
+          id="features"
+          class="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl w-full"
+        >
+          <div
+            class="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 text-center"
+          >
+            <h3 class="text-xl font-bold text-white mb-3">
+              Interactive Circuits
+            </h3>
+            <p class="text-gray-300">
+              Build and visualize quantum circuits in real-time.
+            </p>
+          </div>
+          <div
+            class="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 text-center"
+          >
+            <h3 class="text-xl font-bold text-white mb-3">Quantum Gates</h3>
+            <p class="text-gray-300">
+              Experiment with various quantum gates and operations.
+            </p>
+          </div>
+          <div
+            class="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 text-center"
+          >
+            <h3 class="text-xl font-bold text-white mb-3">
+              Visualization Tools
+            </h3>
+            <p class="text-gray-300">
+              See quantum states and probabilities in action.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load Firebase Config First -->
+    <script src="js/firebase-config.js"></script>
+
+    <!-- Initialize Firebase -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      // The 'firebaseConfig' variable is loaded from the file above
+      initializeApp(firebaseConfig);
+    </script>
+
+    <!-- Load Shared Authentication Logic -->
+    <!-- This script will handle the dynamic navigation links -->
+    <script type="module" src="js/auth.js"></script>
+
+    <!-- Theme Toggle Script -->
+    <script>
+      // Theme toggle functionality
+      const themeToggle = document.getElementById('theme-toggle');
+      const body = document.body;
+      
+      // Check for saved theme preference or default to dark mode
+      const currentTheme = localStorage.getItem('theme') || 'dark';
+      
+      // Apply saved theme on page load
+      if (currentTheme === 'light') {
+        body.classList.add('light-mode');
+        themeToggle.classList.remove('dark');
+      } else {
+        themeToggle.classList.add('dark');
+      }
+      
+      // Theme toggle event listener
+      themeToggle.addEventListener('click', () => {
+        body.classList.toggle('light-mode');
+        themeToggle.classList.toggle('dark');
+        
+        // Save theme preference
+        const newTheme = body.classList.contains('light-mode') ? 'light' : 'dark';
+        localStorage.setItem('theme', newTheme);
+        
+        // Add a subtle animation feedback
+        themeToggle.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          themeToggle.style.transform = 'scale(1)';
+        }, 100);
+      });
+    </script>
+  </body>
+</html>

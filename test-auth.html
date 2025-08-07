@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Google Auth Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1 class="text-2xl mb-4">Google Authentication Test</h1>
+    <button id="google-signin" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">
+        Test Google Sign In
+    </button>
+    <div id="result" class="mt-4"></div>
+
+    <script src="js/firebase-config.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            GoogleAuthProvider,
+            signInWithPopup
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Initialize Firebase
+        const app = initializeApp(window.firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Add event listener
+        document.getElementById('google-signin').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = '<p class="text-yellow-500">Attempting Google sign in...</p>';
+                
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                
+                resultDiv.innerHTML = `
+                    <div class="text-green-500">
+                        <p><strong>✅ Success!</strong></p>
+                        <p>Email: ${user.email}</p>
+                        <p>Display Name: ${user.displayName}</p>
+                        <p>UID: ${user.uid}</p>
+                    </div>
+                `;
+                
+                // Redirect to index after 2 seconds
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Google Sign-In Error:', error);
+                resultDiv.innerHTML = `
+                    <div class="text-red-500">
+                        <p><strong>❌ Error:</strong></p>
+                        <p>Code: ${error.code}</p>
+                        <p>Message: ${error.message}</p>
+                        <p class="text-sm mt-2">Check console for full error details</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

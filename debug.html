@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Debug Test</title>
+</head>
+<body>
+    <h1>Firebase Debug Test</h1>
+    <button id="test-google-auth">Test Google Auth</button>
+    <div id="output"></div>
+
+    <script src="js/firebase-config.js"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            GoogleAuthProvider,
+            signInWithPopup
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += `<p>${message}</p>`;
+            console.log(message);
+        }
+
+        try {
+            log('1. Loading Firebase config...');
+            log(`2. Firebase config loaded: ${JSON.stringify(window.firebaseConfig)}`);
+            
+            log('3. Initializing Firebase...');
+            const app = initializeApp(window.firebaseConfig);
+            log('4. Firebase initialized successfully');
+            
+            log('5. Getting Auth...');
+            const auth = getAuth(app);
+            log('6. Auth instance created');
+            
+            log('7. Creating Google Provider...');
+            const googleProvider = new GoogleAuthProvider();
+            log('8. Google Provider created');
+            
+            document.getElementById('test-google-auth').addEventListener('click', async () => {
+                try {
+                    log('9. Attempting Google sign in...');
+                    const result = await signInWithPopup(auth, googleProvider);
+                    log('10. Google sign in successful!');
+                    log(`User: ${result.user.email}`);
+                } catch (error) {
+                    log(`Error during Google sign in: ${error.message}`);
+                    log(`Error code: ${error.code}`);
+                    log(`Full error: ${JSON.stringify(error)}`);
+                }
+            });
+            
+        } catch (error) {
+            log(`Error during setup: ${error.message}`);
+            log(`Full error: ${JSON.stringify(error)}`);
+        }
+    </script>
+</body>
+</html>
