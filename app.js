@@ -1029,6 +1029,8 @@ function drawCircuit() {
     svg.appendChild(text);
   }
 
+  console.log("hekllo");
+  
   // Gates
   circuit.gates.forEach((g) => {
     const x = 60 + g.col * 80;
@@ -1177,6 +1179,8 @@ function drawCircuit() {
 
   canvas.appendChild(svg);
 
+  console.log("efjhdskjfhekjgdf",canvas.querySelectorAll("rect[data-row]"));
+  
   // Drag events for drop-zones
   canvas.querySelectorAll("rect[data-row]").forEach((zone) => {
     zone.addEventListener("dragover", (e) => e.preventDefault());
@@ -1189,12 +1193,28 @@ function drawCircuit() {
 }
 
 function onDropGate(e) {
+  console.log("onDropGate called!");
   e.preventDefault();
+  
   const gateName = e.dataTransfer.getData("text/plain");
   const row = parseInt(e.target.dataset.row, 10);
   const col = parseInt(e.target.dataset.col, 10);
 
   try {
+    // Call the addGate function from composer.html
+    if (typeof addGate === "function") {
+      console.log("Calling addGate function:", gateName, row);
+      
+      if (gateName === "cx") {
+        addGate("CNOT", row + 1, row); // target, control
+      } else if (gateName === "cz") {
+        addGate("CZ", row + 1, row);
+      } else {
+        addGate(gateName.toUpperCase(), row);
+      }
+    }
+    
+    // Still update the app.js circuit for consistency
     circuit.addGate(gateName, row, col);
     drawCircuit();
     refreshCode();

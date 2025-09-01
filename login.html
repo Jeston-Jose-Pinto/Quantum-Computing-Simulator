@@ -187,7 +187,8 @@
 
             try {
                 const userCredentials = await signInWithEmailAndPassword(auth, email, password);
-                const loggedUser = userCredentials.user;
+                const loggedUser = userCredentials.user;  
+                localStorage.setItem("userId", loggedUser.uid);
                 
                 showToast("Logged In Successfully", "success");
                 navigate("index.html");
@@ -200,12 +201,15 @@
 
         // --- 6. Google Sign-In Logic ---
         googleSigninBtn.addEventListener('click', async () => {
+            
             googleProvider.setCustomParameters({
                 prompt: "select_account",
             });
 
             try {
-                await signInWithPopup(auth, googleProvider);
+                const res=await signInWithPopup(auth, googleProvider);
+                localStorage.setItem("userId", res.uid);
+                
                 showToast("Signed In With Google", "success");
                 navigate("index.html");
 
