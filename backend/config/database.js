@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect("mongodb+srv://harshith:2005@nodeexpreeproject.5kniwxy.mongodb.net/Quantum-simulator?retryWrites=true&w=majority&appName=nodeExpreeproject", {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
